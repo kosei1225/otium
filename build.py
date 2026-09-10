@@ -287,6 +287,54 @@ assert s.count(css_anchor) == 1, "CSS anchor not found"
 s = s.replace(css_anchor, CSS_ADD + "\n" + css_anchor, 1)
 
 # ─────────────────────────────────────────────────────────
+# 4b. HERO：何のモノか・どう使うか・何が得られるかを入れる
+# ─────────────────────────────────────────────────────────
+HERO_OLD = u"""      <div class="mark rv">OTIUM</div>
+      <h1 class="rv d1">心が乱れたときに、<br>戻ってこられる場所を。</h1>
+      <div class="hero__hair rv d2"></div>
+      <div class="hero__sub rv d3">
+        <p>身を削って走り続ける人に、英気を養える時間を。<br>
+        古代ローマの言葉、Otium（オティウム）から。</p>
+      </div>"""
+HERO_NEW = u"""      <div class="mark rv">OTIUM</div>
+      <p class="hero__what rv">持ち歩ける、お香。</p>
+      <h1 class="rv d1">心が乱れたときに、<br>戻ってこられる場所を。</h1>
+      <div class="hero__hair rv d2"></div>
+      <div class="hero__sub rv d3">
+        <p>木のケースに、お香を一本。<br>
+        迷ったら、開けて、嗅いで、閉じる。<br>
+        その数秒だけ、判断の渦から離れられる。</p>
+        <p class="hero__origin">古代ローマの言葉、Otium（オティウム）から。</p>
+      </div>"""
+assert s.count(HERO_OLD) == 1, "hero markup not found"
+s = s.replace(HERO_OLD, HERO_NEW, 1)
+s = s.replace(u'alt="街の交差点で香りを嗅ぐ人"', u'alt="街の交差点で、持ち歩けるお香を嗅ぐ人"', 1)
+
+HEAD = [
+ (u'<title>Otium — 心が乱れたときに、戻ってこられる場所を。</title>',
+  u'<title>Otium — 持ち歩けるお香</title>\n'
+  u'<meta name="description" content="木のケースに、お香を一本。迷ったら、開けて、嗅いで、閉じる。心が乱れたときに、戻ってこられる場所を。">'),
+ (u'<meta property="og:title" content="Otium">',
+  u'<meta property="og:title" content="Otium — 持ち歩けるお香">'),
+ (u'<meta property="og:description" content="心が乱れたときに、戻ってこられる場所を。">',
+  u'<meta property="og:description" content="木のケースに、お香を一本。迷ったら、開けて、嗅いで、閉じる。心が乱れたときに、戻ってこられる場所を。">'),
+]
+for a, b in HEAD:
+    assert s.count(a) == 1, a
+    s = s.replace(a, b, 1)
+
+HERO_CSS = """
+/* ══ HERO：モノの名前 ══ */
+.hero__copy .mark{margin-bottom:1.05rem}
+.hero__what{font-family:var(--jp);font-weight:500;
+  font-size:clamp(1rem,1.4vw,1.2rem);letter-spacing:.16em;
+  color:#E6DED2;margin-bottom:2.3rem}
+.hero__origin{margin-top:1.3rem;font-size:.76rem!important;
+  letter-spacing:.08em;color:var(--smoke)!important}
+"""
+s = s.replace(css_anchor, HERO_CSS + "\n" + css_anchor, 1)
+
+# ─────────────────────────────────────────────────────────
 # 5. 画像を base64 で埋め込む
 # ─────────────────────────────────────────────────────────
 for k, f in [("P1","p1.jpg"),("P2","p2.jpg"),("P3","p3.jpg"),
