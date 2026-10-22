@@ -359,23 +359,40 @@ a:focus-visible,.btn:focus-visible{outline:2px solid var(--brass-lt);outline-off
 
 /* ══ 入場演出：煙 → 商品 → ページ ══ */
 /* ページ本体には一切さわらない。JS が差し込むオーバーレイの中だけで完結する */
-.intro-ov{position:fixed;inset:0;z-index:9999;background:var(--paper);
+.intro-ov{position:fixed;inset:0;z-index:9999;background:var(--ink);
   pointer-events:none;animation:introOut .8s ease-out 2.8s forwards}
 @keyframes introOut{from{opacity:1}to{opacity:0}}
 
-/* ── 1. 煙（0.0s〜）──────────────────────────── */
-.intro-smoke{position:absolute;left:50%;top:58%;width:0;height:0;
-  animation:introSmokeOut .6s ease-out 2.6s forwards}
+/* ── 1. 煙（0.0s〜）暗い地なので、煙は紙色で立てる ───── */
+/* 煙の口は、商品の上端あたりに置く */
+.intro-smoke{position:absolute;left:50%;
+  top:calc(58% - clamp(200px,38vmin,460px) * 0.44);
+  width:0;height:0;
+  animation:introSmokeOut .7s ease-out 2.5s forwards}
 @keyframes introSmokeOut{from{opacity:1}to{opacity:0}}
-.intro-smoke i{position:absolute;left:-17vmin;top:-40vmin;width:34vmin;height:56vmin;
-  background:radial-gradient(ellipse at 50% 68%,
-    rgba(23,18,14,.14) 0%,rgba(23,18,14,.07) 40%,rgba(23,18,14,0) 72%);
+
+/* 一本ずつは細い筋。重ねて揺らぐ */
+.intro-smoke i{position:absolute;
+  left:calc(var(--w) / -2);top:calc(var(--h) * -0.94);
+  width:var(--w);height:var(--h);
+  background:radial-gradient(ellipse at 50% 94%,
+    rgba(237,230,218,.46) 0%,rgba(237,230,218,.22) 26%,
+    rgba(237,230,218,.07) 52%,rgba(237,230,218,0) 76%);
   transform-origin:50% 100%;opacity:0;filter:blur(var(--b));
-  animation:introSmoke 2.4s ease-out var(--d) forwards}
+  animation:introSmoke 2.6s ease-out var(--d) forwards}
 @keyframes introSmoke{
-  0%{opacity:0;transform:translateY(0) scale(.6) rotate(0deg)}
-  30%{opacity:.5}
-  100%{opacity:0;transform:translateY(-180px) scale(1.6) rotate(var(--r))}}
+  0%{opacity:0;transform:translate(0,0) scaleX(.34) scaleY(.30) rotate(0deg)}
+  18%{opacity:.85}
+  60%{opacity:.5}
+  100%{opacity:0;transform:translate(var(--x),-268px) scaleX(1.15) scaleY(2.1) rotate(var(--r))}}
+
+/* 火口のかわりの、小さく強い明るみ */
+.intro-src{position:absolute;left:-3.2vmin;top:-3.2vmin;width:6.4vmin;height:6.4vmin;
+  background:radial-gradient(circle at 50% 50%,
+    rgba(237,230,218,.55) 0%,rgba(237,230,218,.14) 38%,rgba(237,230,218,0) 68%);
+  filter:blur(8px);opacity:0;
+  animation:introSrc 2.6s ease-out .05s forwards}
+@keyframes introSrc{0%{opacity:0}14%{opacity:1}66%{opacity:.6}100%{opacity:0}}
 
 /* ── 2. 商品（1.2s〜2.6s、以降 0.4s 静止）────── */
 .intro-obj{position:absolute;left:50%;top:58%;
@@ -436,12 +453,21 @@ footer{padding:clamp(3rem,7vh,5rem) var(--pad);border-top:1px solid rgba(255,255
   ov.setAttribute("aria-hidden","true");
   var sm=document.createElement("div");
   sm.className="intro-smoke";
-  var L=[[0,28,-6],[0.15,34,5],[0.3,40,-4],[0.45,46,7],[0.6,48,-5]];
+  var src=document.createElement("b");
+  src.className="intro-src";
+  sm.appendChild(src);
+  /* delay, blur, rotate, x, width(vmin), height(vmin) */
+  var L=[[0,10,-13,-34,5,30],[0.1,13,10,26,6,34],[0.22,16,-8,-18,7,38],
+         [0.34,19,17,42,6,33],[0.46,22,-15,-46,8,42],[0.58,25,7,16,7,36],
+         [0.7,28,-6,-12,9,45],[0.82,31,13,32,8,40]];
   for(var i=0;i<L.length;i++){
     var e=document.createElement("i");
     e.style.setProperty("--d",L[i][0]+"s");
     e.style.setProperty("--b",L[i][1]+"px");
     e.style.setProperty("--r",L[i][2]+"deg");
+    e.style.setProperty("--x",L[i][3]+"px");
+    e.style.setProperty("--w",L[i][4]+"vmin");
+    e.style.setProperty("--h",L[i][5]+"vmin");
     sm.appendChild(e);
   }
   var ob=document.createElement("div");
