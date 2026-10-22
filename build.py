@@ -335,6 +335,85 @@ HERO_CSS = """
 s = s.replace(css_anchor, HERO_CSS + "\n" + css_anchor, 1)
 
 # ─────────────────────────────────────────────────────────
+# 4c. 入場アニメーション（香りが広がるように）
+# ─────────────────────────────────────────────────────────
+# SCROLL インジケーターを外す
+SCROLL_OLD = u'  <div class="scroll"><span></span>SCROLL</div>\n'
+assert s.count(SCROLL_OLD) == 1, "scroll indicator not found"
+s = s.replace(SCROLL_OLD, u"", 1)
+
+# ヒーローの .rv（スクロール連動の出現）を外し、入場側で一括して制御する
+HERO_RV = [
+    (u'<div class="mark rv">OTIUM</div>', u'<div class="mark">OTIUM</div>'),
+    (u'<p class="hero__what rv">', u'<p class="hero__what">'),
+    (u'<h1 class="rv d1">', u'<h1>'),
+    (u'<div class="hero__hair rv d2"></div>', u'<div class="hero__hair"></div>'),
+    (u'<div class="hero__sub rv d3">', u'<div class="hero__sub">'),
+]
+for a, b in HERO_RV:
+    assert s.count(a) == 1, a
+    s = s.replace(a, b, 1)
+
+INTRO_CSS = """
+/* ══ 入場：香りが広がるように ══ */
+/* ドリフトで縁が離れないよう、写真の器だけ静的に一回り大きく取る */
+.hero__bg{inset:-10px}
+
+html.intro .hero{background:var(--paper)}
+html.intro .hero__bg{
+  opacity:0;filter:blur(18px);transform:scale(1.04);
+  animation:introHero 1.8s cubic-bezier(.16,1,.3,1) .4s forwards}
+html.intro .hero__what{
+  opacity:0;letter-spacing:.28em;
+  animation:introHead 1.2s cubic-bezier(.16,1,.3,1) 1.1s forwards}
+html.intro .mark,
+html.intro .hero h1,
+html.intro .hero__hair,
+html.intro .hero__sub{
+  opacity:0;animation:introRest .6s ease-out 1.9s forwards}
+
+@keyframes introHero{
+  from{opacity:0;filter:blur(18px);transform:scale(1.04)}
+  to{opacity:1;filter:blur(0);transform:scale(1)}}
+@keyframes introHead{
+  from{opacity:0;letter-spacing:.28em}
+  to{opacity:1;letter-spacing:.16em}}
+@keyframes introRest{from{opacity:0}to{opacity:1}}
+
+/* 入場のあとも、空気は完全には止まらない */
+.hero__bg img{animation:drift 14s ease-in-out infinite alternate;will-change:transform}
+@keyframes drift{
+  from{transform:scale(1) translateY(0)}
+  to{transform:scale(1.012) translateY(-4px)}}
+
+@media (prefers-reduced-motion:reduce){
+  html.intro .hero{background:none}
+  html.intro .hero__bg,html.intro .hero__what,html.intro .mark,
+  html.intro .hero h1,html.intro .hero__hair,html.intro .hero__sub{
+    opacity:1;filter:none;transform:none;animation:none}
+  html.intro .hero__what{letter-spacing:.16em}
+  .hero__bg img{animation:none}}
+"""
+s = s.replace(css_anchor, INTRO_CSS + "\n" + css_anchor, 1)
+
+INTRO_JS = u"""</style>
+<script>
+(function(){
+  try{
+    if(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches){return;}
+    if(sessionStorage.getItem("otium.intro")){return;}
+    sessionStorage.setItem("otium.intro","1");
+  }catch(e){return;}
+  var h=document.documentElement;
+  h.className+=" intro";
+  setTimeout(function(){h.className=h.className.replace(/\\s*\\bintro\\b/,"");},2600);
+})();
+</script>
+<noscript><style>.rv{opacity:1!important;transform:none!important}</style></noscript>"""
+assert s.count(u"</style>") == 1, "style close tag not unique"
+s = s.replace(u"</style>", INTRO_JS, 1)
+
+# ─────────────────────────────────────────────────────────
 # 5. 画像を base64 で埋め込む
 # ─────────────────────────────────────────────────────────
 for k, f in [("P1","p1.jpg"),("P2","p2.jpg"),("P3","p3.jpg"),
