@@ -335,14 +335,14 @@ HERO_CSS = """
 s = s.replace(css_anchor, HERO_CSS + "\n" + css_anchor, 1)
 
 # ─────────────────────────────────────────────────────────
-# 4c. 入場アニメーション（香りが広がるように）
+# 4c. 入場演出：煙 → 商品 → ページ
 # ─────────────────────────────────────────────────────────
 # SCROLL インジケーターを外す
 SCROLL_OLD = u'  <div class="scroll"><span></span>SCROLL</div>\n'
 assert s.count(SCROLL_OLD) == 1, "scroll indicator not found"
 s = s.replace(SCROLL_OLD, u"", 1)
 
-# ヒーローの .rv（スクロール連動の出現）を外し、入場側で一括して制御する
+# ヒーローの .rv（スクロール連動の出現）を外す。オーバーレイが明けた時点で見えている状態にする
 HERO_RV = [
     (u'<div class="mark rv">OTIUM</div>', u'<div class="mark">OTIUM</div>'),
     (u'<p class="hero__what rv">', u'<p class="hero__what">'),
@@ -354,46 +354,55 @@ for a, b in HERO_RV:
     assert s.count(a) == 1, a
     s = s.replace(a, b, 1)
 
+OBJ = "data:image/png;base64," + base64.b64encode(
+    open(os.path.join(PH, "intro_product.png"), "rb").read()).decode()
+
 INTRO_CSS = """
-/* ══ 入場：香りが広がるように ══ */
-/* ドリフトで縁が離れないよう、写真の器だけ静的に一回り大きく取る */
-.hero__bg{inset:-10px}
+/* ══ 入場演出：煙 → 商品 → ページ ══ */
+/* ページ本体には一切さわらない。JS が差し込むオーバーレイの中だけで完結する */
+.intro-ov{position:fixed;inset:0;z-index:9999;background:var(--paper);
+  pointer-events:none;animation:introOut .8s ease-out 2.8s forwards}
+@keyframes introOut{from{opacity:1}to{opacity:0}}
 
-html.intro .hero{background:var(--paper)}
-html.intro .hero__bg{
-  opacity:0;filter:blur(18px);transform:scale(1.04);
-  animation:introHero 1.8s cubic-bezier(.16,1,.3,1) .4s forwards}
-html.intro .hero__what{
-  opacity:0;letter-spacing:.28em;
-  animation:introHead 1.2s cubic-bezier(.16,1,.3,1) 1.1s forwards}
-html.intro .mark,
-html.intro .hero h1,
-html.intro .hero__hair,
-html.intro .hero__sub{
-  opacity:0;animation:introRest .6s ease-out 1.9s forwards}
+/* ── 1. 煙（0.0s〜）──────────────────────────── */
+.intro-smoke{position:absolute;left:50%;top:58%;width:0;height:0;
+  animation:introSmokeOut .6s ease-out 2.6s forwards}
+@keyframes introSmokeOut{from{opacity:1}to{opacity:0}}
+.intro-smoke i{position:absolute;left:-17vmin;top:-40vmin;width:34vmin;height:56vmin;
+  background:radial-gradient(ellipse at 50% 68%,
+    rgba(23,18,14,.14) 0%,rgba(23,18,14,.07) 40%,rgba(23,18,14,0) 72%);
+  transform-origin:50% 100%;opacity:0;filter:blur(var(--b));
+  animation:introSmoke 2.4s ease-out var(--d) forwards}
+@keyframes introSmoke{
+  0%{opacity:0;transform:translateY(0) scale(.6) rotate(0deg)}
+  30%{opacity:.5}
+  100%{opacity:0;transform:translateY(-180px) scale(1.6) rotate(var(--r))}}
 
-@keyframes introHero{
-  from{opacity:0;filter:blur(18px);transform:scale(1.04)}
+/* ── 2. 商品（1.2s〜2.6s、以降 0.4s 静止）────── */
+.intro-obj{position:absolute;left:50%;top:58%;
+  width:clamp(69px,13.2vmin,160px);height:clamp(200px,38vmin,460px);
+  margin:calc(clamp(200px,38vmin,460px) / -2) 0 0 calc(clamp(69px,13.2vmin,160px) / -2);
+  background:url("__OBJ__") center/contain no-repeat;
+  opacity:0;filter:blur(14px);transform:scale(.94);
+  animation:introObj 1.4s cubic-bezier(.16,1,.3,1) 1.2s forwards}
+@keyframes introObj{
+  from{opacity:0;filter:blur(14px);transform:scale(.94)}
   to{opacity:1;filter:blur(0);transform:scale(1)}}
-@keyframes introHead{
-  from{opacity:0;letter-spacing:.28em}
-  to{opacity:1;letter-spacing:.16em}}
-@keyframes introRest{from{opacity:0}to{opacity:1}}
 
 /* 入場のあとも、空気は完全には止まらない */
+.hero__bg{inset:-10px}
 .hero__bg img{animation:drift 14s ease-in-out infinite alternate;will-change:transform}
 @keyframes drift{
   from{transform:scale(1) translateY(0)}
   to{transform:scale(1.012) translateY(-4px)}}
 
 @media (prefers-reduced-motion:reduce){
-  html.intro .hero{background:none}
-  html.intro .hero__bg,html.intro .hero__what,html.intro .mark,
-  html.intro .hero h1,html.intro .hero__hair,html.intro .hero__sub{
-    opacity:1;filter:none;transform:none;animation:none}
-  html.intro .hero__what{letter-spacing:.16em}
+  .intro-ov{display:none}
   .hero__bg img{animation:none}}
 """
+s_obj = OBJ
+INTRO_CSS = INTRO_CSS.replace("__OBJ__", OBJ)
+
 s = s.replace(css_anchor, INTRO_CSS + "\n" + css_anchor, 1)
 
 INTRO_JS = u"""</style>
@@ -404,9 +413,27 @@ INTRO_JS = u"""</style>
     if(sessionStorage.getItem("otium.intro")){return;}
     sessionStorage.setItem("otium.intro","1");
   }catch(e){return;}
-  var h=document.documentElement;
-  h.className+=" intro";
-  setTimeout(function(){h.className=h.className.replace(/\\s*\\bintro\\b/,"");},2600);
+  var ov=document.createElement("div");
+  ov.className="intro-ov";
+  ov.setAttribute("aria-hidden","true");
+  var sm=document.createElement("div");
+  sm.className="intro-smoke";
+  var L=[[0,28,-6],[0.15,34,5],[0.3,40,-4],[0.45,46,7],[0.6,48,-5]];
+  for(var i=0;i<L.length;i++){
+    var e=document.createElement("i");
+    e.style.setProperty("--d",L[i][0]+"s");
+    e.style.setProperty("--b",L[i][1]+"px");
+    e.style.setProperty("--r",L[i][2]+"deg");
+    sm.appendChild(e);
+  }
+  var ob=document.createElement("div");
+  ob.className="intro-obj";
+  ov.appendChild(sm);ov.appendChild(ob);
+  document.documentElement.appendChild(ov);
+  document.addEventListener("DOMContentLoaded",function(){
+    if(document.body&&ov.parentNode!==document.body){document.body.appendChild(ov);}
+  });
+  setTimeout(function(){if(ov.parentNode){ov.parentNode.removeChild(ov);}},3600);
 })();
 </script>
 <noscript><style>.rv{opacity:1!important;transform:none!important}</style></noscript>"""
